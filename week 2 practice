@@ -1,0 +1,51 @@
+# ================================
+# ✅ 作业一：NumPy
+# ================================
+import numpy as np
+
+# 1. 定义两个自定义 numpy 数组 A 和 B
+A = np.array([[1, 5, 9], [3, 7, 11]])
+B = np.array([[2, 5, 8], [4, 7, 10]])
+
+# 2. 垂直 & 水平堆叠
+vertical_stack = np.vstack((A, B))
+horizontal_stack = np.hstack((A, B))
+print("Vertical Stack:\n", vertical_stack)
+print("Horizontal Stack:\n", horizontal_stack)
+
+# 3. 找出 A 和 B 的共同元素（交集）
+common_elements = np.intersect1d(A, B)
+print("Common Elements:", common_elements)
+
+# 4. 提取 A 中 5 到 10 之间的数字
+range_elements = A[(A >= 5) & (A <= 10)]
+print("Elements in A between 5 and 10:", range_elements)
+
+# 5. 筛选 iris_2d 中 petallength > 1.5 且 sepallength < 5.0 的行
+url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data'
+iris_2d = np.genfromtxt(url, delimiter=',', dtype='float', usecols=[0,1,2,3])
+
+# 第1列 sepallength < 5.0， 第3列 petallength > 1.5
+filtered_rows = iris_2d[(iris_2d[:, 0] < 5.0) & (iris_2d[:, 2] > 1.5)]
+print("Filtered iris rows:\n", filtered_rows)
+
+
+# ================================
+# ✅ 作业二：Pandas
+# ================================
+import pandas as pd
+
+# 1. 从第0行开始每隔20行选取 Manufacturer, Model, Type
+df = pd.read_csv('https://raw.githubusercontent.com/selva86/datasets/master/Cars93_miss.csv')
+result_every_20 = df.loc[::20, ['Manufacturer', 'Model,', 'Type']]
+print("Every 20th row (Manufacturer, Model, Type):\n", result_every_20)
+
+# 2. 将 Min.Price 和 Max.Price 的缺失值替换为列平均值
+df['Min.Price'].fillna(df['Min.Price'].mean(), inplace=True)
+df['Max.Price'].fillna(df['Max.Price'].mean(), inplace=True)
+print("Missing values in Min.Price and Max.Price filled with mean.")
+
+# 3. 获取行总和 > 100 的 dataFrame 行
+df2 = pd.DataFrame(np.random.randint(10, 40, 60).reshape(-1, 4))
+rows_sum_gt_100 = df2[df2.sum(axis=1) > 100]
+print("Rows where row sum > 100:\n", rows_sum_gt_100)
