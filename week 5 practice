@@ -1,0 +1,165 @@
+# 📊 LeetCode SQL + Pandas Solutions
+
+
+---
+
+## 🗂 Table of Contents
+1. [Actors and Directors Who Cooperated At Least Three Times](#1-actors-and-directors-who-cooperated-at-least-three-times)
+2. [Fix Names in a Table](#2-fix-names-in-a-table)
+3. [Combine Two Tables](#3-combine-two-tables)
+4. [Second Highest Salary](#4-second-highest-salary)
+5. [List the Products Ordered in a Period](#5-list-the-products-ordered-in-a-period)
+6. [Replace Employee ID With The Unique Identifier](#6-replace-employee-id-with-the-unique-identifier)
+7. [Game Play Analysis IV](#7-game-play-analysis-iv)
+8. [Project Employees I](#8-project-employees-i)
+9. [Department Top Three Salaries](#9-department-top-three-salaries)
+
+---
+
+## 1. Actors and Directors Who Cooperated At Least Three Times  
+🔗 [LeetCode 1050](https://leetcode.com/problems/actors-and-directors-who-cooperated-at-least-three-times/)
+
+### SQL
+
+SELECT actor_id, director_id
+FROM ActorDirector
+GROUP BY actor_id, director_id
+HAVING COUNT(*) >= 3;
+
+### Pandas
+df = actor_director_df
+result = (
+    df.groupby(['actor_id', 'director_id'])
+      .size()
+      .reset_index(name='count')
+      .query('count >= 3')
+      .loc[:, ['actor_id', 'director_id']]
+)
+
+## 2. Fix Names in a Table
+
+###SQL
+SELECT 
+  user_id,
+  CONCAT(UPPER(SUBSTRING(name,1,1)), LOWER(SUBSTRING(name,2))) AS name
+FROM Users
+ORDER BY user_id;
+
+
+###PANDAS
+users_df['name'] = users_df['name'].str.capitalize()
+result_df = users_df.sort_values('user_id')
+
+##3.Combine Two Tables
+
+###SQL
+SELECT p.firstName, p.lastName, a.city, a.state
+FROM Person p
+LEFT JOIN Address a
+ON p.personId = a.personId;
+
+
+###PANDAS
+result = pd.merge(person_df, address_df, on='personId', how='left')
+result = result[['firstName', 'lastName', 'city', 'state']]
+
+
+##4.Second Highest Salary
+
+##SQL
+SELECT MAX(salary) AS SecondHighestSalary
+FROM Employee
+WHERE salary < (SELECT MAX(salary) FROM Employee);
+
+
+##PANDAS
+second = employees_df['salary'][employees_df['salary'] < employees_df['salary'].max()].max()
+result = pd.DataFrame({'SecondHighestSalary': [second]})
+
+
+###5.List the Products Ordered in a Period
+
+##SQL
+SELECT product_name, SUM(unit) AS unit
+FROM Orders o
+JOIN Products p ON o.product_id = p.product_id
+WHERE o.order_date BETWEEN '2020-02-01' AND '2020-02-29'
+GROUP BY product_name
+HAVING SUM(unit) >= 100;
+
+
+##Pandas
+merged = pd.merge(orders_df, products_df, on='product_id')
+filtered = merged[(merged['order_date'] >= '2020-02-01') & (merged['order_date'] <= '2020-02-29')]
+result = (
+    filtered.groupby('product_name')['unit']
+            .sum()
+            .reset_index()
+            .query('unit >= 100')
+)
+
+
+###6.Replace Employee ID With The Unique Identifier
+
+###SQL
+SELECT u.unique_id, e.name
+FROM Employees e
+LEFT JOIN EmployeeUNI u
+ON e.id = u.id;
+
+
+##Pandas
+result = employees_df.merge(employee_uni_df, on='id', how='left')
+result = result[['unique_id', 'name']]
+
+###7.Game Play Analysis IV
+
+###SQL
+SELECT ROUND(COUNT(DISTINCT player_id) / 
+             (SELECT COUNT(DISTINCT player_id) FROM Activity), 2) AS fraction
+FROM Activity
+WHERE (player_id, DATE_SUB(event_date, INTERVAL 1 DAY)) 
+      IN (SELECT player_id, MIN(event_date) FROM Activity GROUP BY player_id);
+
+##Pandas
+first = df.groupby('player_id')['event_date'].min().reset_index()
+merged = pd.merge(df, first, on='player_id')
+merged['diff'] = (pd.to_datetime(merged['event_date']) - pd.to_datetime(merged['event_date_y'])).dt.days
+fraction = round((merged['diff'] == 1).sum() / df['player_id'].nunique(), 2)
+
+
+###8.Project Employees I
+###SQL
+SELECT project_id, ROUND(AVG(experience_years), 2) AS average_years
+FROM Project p
+JOIN Employee e ON p.employee_id = e.employee_id
+GROUP BY project_id;
+
+###Pandas
+merged = pd.merge(project_df, employee_df, on='employee_id')
+result = (
+    merged.groupby('project_id')['experience_years']
+          .mean()
+          .round(2)
+          .reset_index(name='average_years')
+)
+
+###9.Department Top Three Salaries
+
+###SQL
+SELECT d.name AS Department, e.name AS Employee, e.salary
+FROM Employee e
+JOIN Department d ON e.departmentId = d.id
+WHERE (
+    SELECT COUNT(DISTINCT salary)
+    FROM Employee
+    WHERE departmentId = e.departmentId AND salary > e.salary
+) < 3
+ORDER BY d.name, e.salary DESC;
+
+
+###Pandas
+merged = pd.merge(employee_df, department_df, left_on='departmentId', right_on='id')
+merged['rank'] = merged.groupby('name_y')['salary'].rank(method='dense', ascending=False)
+result = merged[merged['rank'] <= 3][['name_y', 'name_x', 'salary']]
+result.columns = ['Department', 'Employee', 'Salary']
